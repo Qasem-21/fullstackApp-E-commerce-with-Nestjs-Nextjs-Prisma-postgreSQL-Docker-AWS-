@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
@@ -19,6 +20,7 @@ export class AuthService {
   ) {}
 
   // register a new user
+
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
     const { email, password, firstName, lastName } = registerDto;
 
@@ -84,6 +86,40 @@ export class AuthService {
     await this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken },
+    });
+  }
+
+  // refresh access token
+  async refreshTokens(userId: string): Promise<AuthResponseDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('user not found');
+    }
+
+    const tokens = await this.generateTokens(user.id, user.email);
+    await this.updateRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      ...tokens,
+      user,
+    };
+  }
+
+  // log out
+  async logout(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
     });
   }
 }
