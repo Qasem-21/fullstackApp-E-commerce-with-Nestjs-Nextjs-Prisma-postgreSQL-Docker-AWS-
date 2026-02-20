@@ -10,6 +10,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   // set Global validation
+  // with this using these pipes for every routes in project
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -20,6 +21,14 @@ async function bootstrap() {
       },
     }),
   );
+
+  // enable cors
+  app.enableCors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? 'http://localhost:3010',
+    Credential: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  });
 
   await app.listen(process.env.PORT ?? 3010);
 }
