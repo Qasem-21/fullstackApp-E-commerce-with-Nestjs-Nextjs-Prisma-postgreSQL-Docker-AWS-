@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { RefreshTokenGuard } from './guards/refresh-token.guard';
     JwtStrategy,
     RefreshTokenStrategy,
     RefreshTokenGuard,
+    RolesGuard,
   ],
   controllers: [AuthController],
 })
