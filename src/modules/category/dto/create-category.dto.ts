@@ -27,7 +27,7 @@ export class CreateCategoryDto {
   @IsString()
   @IsOptional()
   @MaxLength(255)
-  description?: string;
+  descriptions?: string;
 
   @ApiProperty({
     example: 'electronics',

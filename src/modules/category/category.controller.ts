@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -23,7 +31,7 @@ export class CategoryController {
   //   create a new category
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.USER)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Create a new category' })
   @ApiBody({ type: CreateCategoryDto })
@@ -32,6 +40,7 @@ export class CategoryController {
   @ApiResponse({ status: 401, description: 'UnAuthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   async createCategory(
+    @Body()
     createCategoryDto: CreateCategoryDto,
   ): Promise<CategoryResponseDto> {
     return this.categoryService.createCategory(createCategoryDto);
@@ -81,5 +90,23 @@ export class CategoryController {
   })
   async findOne(@Param('id') id: string): Promise<CategoryResponseDto> {
     return await this.categoryService.findOne(id);
+  }
+
+  // get category by slug
+  @Get('slug/:slug')
+  @ApiOperation({
+    summary: 'get category by slug',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'category detail',
+    type: CategoryResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'category not found',
+  })
+  async findBySlug(@Param('slug') slug: string): Promise<CategoryResponseDto> {
+    return await this.categoryService.findBySlug(slug);
   }
 }
