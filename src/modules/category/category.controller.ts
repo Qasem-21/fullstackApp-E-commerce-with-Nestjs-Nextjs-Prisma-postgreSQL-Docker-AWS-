@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -13,6 +13,7 @@ import { Role } from '@prisma/client';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { CategoryResponseDto } from './dto/category-response.dto';
+import { QueryCategoryDto } from './dto/query-category.dto';
 
 @ApiTags('categories')
 @Controller('categories')
@@ -36,5 +37,33 @@ export class CategoryController {
     return this.categoryService.createCategory(createCategoryDto);
   }
 
-  
+  //   get all categories
+  @Get()
+  @ApiOperation({ summary: 'Get all categories' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of categories',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          items: { $ref: '#/components/schemas/CategoryResponseDto' },
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            total: { type: 'number' },
+            page: { type: 'number' },
+            limit: { type: 'number' },
+            totalPages: { type: 'number' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'UnAuthorized' })
+  async getAllCategories(@Query() queryDto: QueryCategoryDto) {
+    return await this.categoryService.getAllCategories(queryDto);
+  }
 }

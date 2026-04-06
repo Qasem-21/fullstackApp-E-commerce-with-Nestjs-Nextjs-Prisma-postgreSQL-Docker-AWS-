@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CategoryResponseDto } from './dto/category-response.dto';
+import { QueryCategoryDto } from './dto/query-category.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CategoryService {
@@ -37,6 +39,56 @@ export class CategoryService {
     });
 
     return this.formatCategory(category, 0);
+  }
+
+  async getAllCategories(queryDto: QueryCategoryDto): Promise<{
+    data: CategoryResponseDto[];
+    meta: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  }> {
+    const { isActive, search, page = 1, limit = 10 } = queryDto;
+
+    const where: Prisma.CategoryWhereInput = {};
+    if (isActive !== undefined) {
+      where.isActive = isActive;
+    }
+    if (search) {
+      where.OR = [
+        {
+          name: { contains: search, mode: 'insensitive' },
+          descriptions: { contains: search, mode: 'insensitive' },
+        },
+      ];
+    }
+    const total = await this.prisma.category.count({ where });
+
+    const categories = await this.prisma.category.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
+    });
+
+    return {
+      data: categories.map((category) =>
+        this.formatCategory(category, category._count.products),
+      ),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   private formatCategory(
