@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CategoryResponseDto } from './dto/category-response.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
 import { Prisma } from '@prisma/client';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoryService {
@@ -119,6 +124,46 @@ export class CategoryService {
     if (!category) throw new NotFoundException('category not found');
 
     return this.formatCategory(category, Number(category._count.products));
+  }
+
+  async update(
+    id: string,
+    updateCategoryDto: UpdateCategoryDto,
+  ): Promise<CategoryResponseDto> {
+    const existingCategory = await this.prisma.category.findUnique({
+      where: { id },
+    });
+    if (!existingCategory) {
+      throw new NotFoundException('category not found');
+    }
+    if (
+      updateCategoryDto.slug &&
+      updateCategoryDto.slug !== existingCategory.slug
+    ) {
+      const slugTaken = await this.prisma.category.findUnique({
+        where: { slug: updateCategoryDto.slug },
+      });
+      if (slugTaken) {
+        throw new ConflictException(
+          `category with slug ${updateCategoryDto.slug} already exist`,
+        );
+      }
+    }
+
+    const updatedCategory = await this.prisma.category.update({
+      where: { id },
+      data: updateCategoryDto,
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
+    });
+
+    return this.formatCategory(
+      updatedCategory,
+      Number(updatedCategory._count.products),
+    );
   }
 
   private formatCategory(

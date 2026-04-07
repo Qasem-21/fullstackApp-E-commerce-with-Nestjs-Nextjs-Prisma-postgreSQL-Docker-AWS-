@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -22,6 +23,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { CategoryResponseDto } from './dto/category-response.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @ApiTags('categories')
 @Controller('categories')
@@ -108,5 +110,34 @@ export class CategoryController {
   })
   async findBySlug(@Param('slug') slug: string): Promise<CategoryResponseDto> {
     return await this.categoryService.findBySlug(slug);
+  }
+
+  // update category (Admin only)
+  @Patch('id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('jwt-auth')
+  @ApiOperation({ summary: 'update category only Admin' })
+  @ApiBody({
+    type: UpdateCategoryDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'category updated successfully',
+    type: CategoryResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'category not found',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'category slug already',
+  })
+  async update(
+    @Param('id') id: string,
+    updateCategoryDto: UpdateCategoryDto,
+  ): Promise<CategoryResponseDto> {
+    return await this.categoryService.update(id, updateCategoryDto);
   }
 }
