@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -22,6 +23,7 @@ import { Role } from '@prisma/client';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
 import { QueryProductDto } from './dto/query-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @ApiTags('products')
 @Controller('products')
@@ -106,5 +108,34 @@ export class ProductsController {
   })
   async findOne(@Param('id') id: string): Promise<ProductResponseDto> {
     return await this.productsService.findOne(id);
+  }
+
+  // update category
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('jwt-auth')
+  @ApiOperation({ summary: 'update product only Admin' })
+  @ApiBody({
+    type: UpdateProductDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'product updated successfully',
+    type: ProductResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'product not found',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'sku already exists',
+  })
+  async update(
+    @Param('id') id: string,
+    updateProductDto: UpdateProductDto,
+  ): Promise<ProductResponseDto> {
+    return await this.productsService.update(id, updateProductDto);
   }
 }
