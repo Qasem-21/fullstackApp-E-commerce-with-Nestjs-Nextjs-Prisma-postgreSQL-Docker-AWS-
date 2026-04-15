@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -80,5 +88,23 @@ export class ProductsController {
   })
   async findAll(@Query() queryDto: QueryProductDto) {
     return await this.productsService.findAll(queryDto);
+  }
+
+  // get product by ID
+  @Get(':id')
+  @ApiOperation({
+    summary: 'get product by ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'product details',
+    type: ProductResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'product not found',
+  })
+  async findOne(@Param('id') id: string): Promise<ProductResponseDto> {
+    return await this.productsService.findOne(id);
   }
 }
