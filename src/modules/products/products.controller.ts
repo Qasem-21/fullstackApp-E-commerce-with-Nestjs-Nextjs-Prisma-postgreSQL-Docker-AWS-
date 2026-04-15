@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -13,6 +13,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
+import { QueryProductDto } from './dto/query-product.dto';
 
 @ApiTags('products')
 @Controller('products')
@@ -22,7 +23,7 @@ export class ProductsController {
   // create
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.USER)
   @ApiBearerAuth('JWT_auth')
   @ApiOperation({
     summary: 'create a new product admin only',
@@ -47,5 +48,37 @@ export class ProductsController {
     @Body() createProductDto: CreateProductDto,
   ): Promise<ProductResponseDto> {
     return await this.productsService.create(createProductDto);
+  }
+
+  // get all products
+  @Get()
+  @ApiOperation({
+    summary: 'get all products with optional filters',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'list of products with pagination',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/ProductResponseDto' },
+        },
+
+        meta: {
+          type: 'object',
+          properties: {
+            total: { type: 'number' },
+            page: { type: 'number' },
+            limit: { type: 'number' },
+            totalPages: { type: 'number' },
+          },
+        },
+      },
+    },
+  })
+  async findAll(@Query() queryDto: QueryProductDto) {
+    return await this.productsService.findAll(queryDto);
   }
 }
