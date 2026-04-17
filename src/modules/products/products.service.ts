@@ -120,7 +120,7 @@ export class ProductsService {
       throw new NotFoundException('product not found with this id');
     }
 
-    if (updateProductDto.sku && updateProductDto.sku !== existingProduct.sku) {
+    if (updateProductDto && updateProductDto.sku !== existingProduct.sku) {
       const skuTaken = await this.prisma.product.findUnique({
         where: { sku: updateProductDto.sku },
       });
@@ -133,7 +133,7 @@ export class ProductsService {
 
     // being careful about price
     const updateData: any = { ...updateProductDto };
-    if (updateProductDto.price !== undefined) {
+    if (updateProductDto && updateProductDto.price !== undefined) {
       updateData.price = new Prisma.Decimal(updateProductDto.price);
     }
 
@@ -173,6 +173,27 @@ export class ProductsService {
     return this.formatProduct(updatedProduct);
   }
 
+  async delete(id: string): Promise<{ message: string }> {
+    const existingProduct = await this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        orderItem: true,
+        cartItem: true,
+      },
+    });
+    if (!existingProduct) {
+      throw new NotFoundException('product not found');
+    }
+    if (existingProduct.orderItem.length > 0) {
+      throw new BadRequestException(
+        'cannot delete product that is part of existing orders. Consider marking it as inactive only',
+      );
+    }
+    await this.prisma.product.delete({
+      where: { id },
+    });
+    return { message: 'product deleted successfully' };
+  }
   private formatProduct(
     product: Product & { category: Category },
   ): ProductResponseDto {
