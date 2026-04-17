@@ -141,7 +141,6 @@ export class CategoryController {
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
   ): Promise<CategoryResponseDto> {
-    console.log('id of for update: ', id);
     return await this.categoryService.update(id, updateCategoryDto);
   }
 
