@@ -10,6 +10,7 @@ import {
   OrderResponseDto,
 } from './dto/order-response.dto';
 import { Order, OrderItem, orderStatus, Product, User } from '@prisma/client';
+import { QueryOrderDto } from './dto/query-order.dto';
 
 @Injectable()
 export class OrdersService {
@@ -95,6 +96,52 @@ export class OrdersService {
     });
 
     return this.wrap(order);
+  }
+
+  async findAllForAdmin(queryOrderDto: QueryOrderDto): Promise<{
+    data: OrderResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const { limit = 10, page = 1, search, status } = queryOrderDto;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (status) where.status = status;
+    if (search)
+      where.OR = [
+        { id: { contains: search, mode: 'insensitive' } },
+        {
+          orderNumber: { contains: search, mode: 'insensitive' },
+        },
+      ];
+
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          orderItems: {
+            include: {
+              product: true,
+            },
+          },
+          user: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+
+      this.prisma.order.count({ where }),
+    ]);
+
+    return {
+      data: orders.map((o) => this.map(o)),
+      total,
+      page,
+      limit,
+    };
   }
 
   private wrap(
