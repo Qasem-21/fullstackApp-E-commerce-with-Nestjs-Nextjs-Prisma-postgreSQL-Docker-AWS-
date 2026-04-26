@@ -6,6 +6,7 @@ import {
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiQuery,
   ApiResponse,
@@ -24,6 +25,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import {
   OrderApiResponseDto,
   OrderResponseDto,
+  PaginatedOrderResponseDto,
 } from './dto/order-response.dto';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -113,5 +115,22 @@ export class OrdersController {
     limit: number;
   }> {
     return await this.ordersService.findAllForAdmin(queryOrderDto);
+  }
+
+  // user Get own orders
+  @Get()
+  @RelaxedThrottle()
+  @ApiOperation({
+    summary: 'get all orders for current user (paginated)',
+  })
+  @ApiQuery({ name: 'status', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiOkResponse({
+    description: 'List of user orders',
+    type: PaginatedOrderResponseDto,
+  })
+  async findAll(@Query() query: QueryOrderDto, @GetUser('id') userId: string) {
+    return await this.ordersService.findAll(userId, query);
   }
 }

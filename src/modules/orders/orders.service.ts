@@ -144,6 +144,53 @@ export class OrdersService {
     };
   }
 
+  async findAll(
+    userId: string,
+    query: QueryOrderDto,
+  ): Promise<{
+    data: OrderResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const { limit = 10, page = 1, search, status } = query;
+    const skip = (page - 1) * limit;
+
+    const where: any = { userId };
+
+    if (status) {
+      where.status = status;
+    }
+    if (search) {
+      where.OR = [{ id: { contains: search, mode: 'insensitive' } }];
+    }
+
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          orderItems: {
+            include: {
+              product: true,
+            },
+          },
+          user: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return {
+      data: orders.map((o) => this.map(o)),
+      total,
+      page,
+      limit,
+    };
+  }
+
   private wrap(
     order: Order & {
       orderItems: (OrderItem & { product: Product })[];
