@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -244,5 +245,27 @@ export class OrdersController {
     @GetUser('id') userId: string,
   ) {
     return await this.ordersService.update(id, dto, userId);
+  }
+
+  // ADMIN: cancel an order
+  @Delete('admin/:id')
+  @Roles(Role.ADMIN)
+  @ModerateThrottle()
+  @ApiOperation({
+    summary: 'ADMIN cancel order by id',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'order id',
+  })
+  @ApiOkResponse({
+    description: 'order canceled',
+    type: OrderApiResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'order not found',
+  })
+  async cancelAdmin(@Param('id') id: string) {
+    return await this.ordersService.cancel(id);
   }
 }

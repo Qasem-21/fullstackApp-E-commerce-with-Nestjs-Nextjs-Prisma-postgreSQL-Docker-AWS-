@@ -250,6 +250,51 @@ export class OrdersService {
 
     return this.wrap(updated);
   }
+
+  async cancel(
+    id: string,
+    userId?: string,
+  ): Promise<OrderApiResponseDto<OrderResponseDto>> {
+    const where: any = { id };
+    if (userId) where.userId = userId;
+
+    const order = await this.prisma.order.findFirst({
+      where,
+      include: {
+        orderItems: true,
+        user: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`order ${id} not found`);
+    }
+    if (order.status !== 'PENDING') {
+      throw new BadRequestException('only pending orders can be cancelled');
+    }
+    const cancelled = await this.prisma.$transaction(async (tx) => {
+      for (const item of order.orderItems) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { increment: item.quantity } },
+        });
+      }
+
+      return tx.order.update({
+        where: { id },
+        data: { status: orderStatus.CANCELLED },
+        include: {
+          orderItems: {
+            include: {
+              product: true,
+            },
+          },
+          user: true,
+        },
+      });
+    });
+    return this.wrap(cancelled);
+  }
   private wrap(
     order: Order & {
       orderItems: (OrderItem & { product: Product })[];
